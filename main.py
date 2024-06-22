@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from textual import events
+from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Button, Footer, Header, Input, RadioButton, RadioSet, Static
@@ -16,14 +16,22 @@ class DisplayWindow(Static):
 
 
 class MainApp(App):
-    CSS_PATH = "styles.css"
+    # CSS_PATH = "styles.css"
+
+    BINDINGS = [
+        ("D", "toggle_dark_mode", "Toggle dark mode"),
+        ("Q", "quit", "Quit"),
+    ]
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield Header(show_clock=True)
         yield Footer()
         yield Container(
-            Input(placeholder="Type your text here ...", id="text_input"),
-            Button(label="Send", id="send_button"),
+            Input(
+                placeholder="Type your text here ...",
+                max_length=100,
+                id="text_input",
+            ),
             RadioSet(
                 RadioButton("Naive Bayes", value="naive_bayes", id="naive_bayes"),
                 RadioButton(
@@ -35,12 +43,17 @@ class MainApp(App):
             DisplayWindow(id="display_window"),
         )
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        button = event.button
-        if button.id == "send_button":
+    def on_mount(self) -> None:
+        self.title = "Sentiment Analysis"
+        self.sub_title = "Enter your text below and click 'Send' to analyze sentiment"
 
-            await self.display_text()
+    def action_toggle_dark_mode(self) -> None:
+        self.dark = not self.dark
 
+    def action_quit(self) -> None:
+        self.app.exit()
+
+    @on(Input.Submitted, "#text_input")
     async def display_text(self) -> None:
         text = self.query_one("#text_input", Input).value
         display_window = self.query_one("#display_window", DisplayWindow)
