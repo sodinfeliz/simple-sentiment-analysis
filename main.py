@@ -1,92 +1,71 @@
 from pathlib import Path
 
-from PySide6.QtWidgets import (
-    QApplication,
-    QButtonGroup,
-    QHBoxLayout,
-    QLineEdit,
-    QMainWindow,
-    QPushButton,
-    QRadioButton,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
-)
+from textual import events
+from textual.app import App, ComposeResult
+from textual.containers import Container
+from textual.widgets import Button, Footer, Header, Input, RadioButton, RadioSet, Static
 
 from lib import calculate_naive_bayes, process_tweet, train_naive_bayes
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+class DisplayWindow(Static):
+    """Widget to display output text"""
 
-        self.setWindowTitle("Simple Sentiment Analysis")
-        self.setFixedSize(600, 500)
+    def append_text(self, text: str) -> None:
+        self.update(self.renderable + "\n" + text)
 
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
 
-        self.layout = QVBoxLayout(self.central_widget)
+class MainApp(App):
+    CSS_PATH = "styles.css"
 
-        self.text_input_layout = QHBoxLayout()
-        self.text_input = QLineEdit()
-        self.text_input.setPlaceholderText("Type your text here ...")
-        self.send_button = QPushButton("Send")
-        self.send_button.clicked.connect(self.display_text)
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Footer()
+        yield Container(
+            Input(placeholder="Type your text here ...", id="text_input"),
+            Button(label="Send", id="send_button"),
+            RadioSet(
+                RadioButton("Naive Bayes", value="naive_bayes", id="naive_bayes"),
+                RadioButton(
+                    "Logistic Regression",
+                    value="logistic_regression",
+                    id="logistic_regression",
+                ),
+            ),
+            DisplayWindow(id="display_window"),
+        )
 
-        self.text_input_layout.addWidget(self.text_input)
-        self.text_input_layout.addWidget(self.send_button)
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        button = event.button
+        if button.id == "send_button":
 
-        self.radio_buttons_layout = QHBoxLayout()
-        self.naive_bayes_button = QRadioButton("Naive Bayes")
-        self.naive_bayes_button.setChecked(True)
-        self.logistic_regression_button = QRadioButton("Logistic Regression")
+            await self.display_text()
 
-        self.radio_buttons_layout.addWidget(self.naive_bayes_button)
-        self.radio_buttons_layout.addWidget(self.logistic_regression_button)
-
-        self.button_group = QButtonGroup()
-        self.button_group.addButton(self.naive_bayes_button)
-        self.button_group.addButton(self.logistic_regression_button)
-
-        self.display_window = QTextEdit()
-        self.display_window.setReadOnly(True)
-
-        self.layout.addLayout(self.text_input_layout)
-        self.layout.addLayout(self.radio_buttons_layout)
-        self.layout.addWidget(self.display_window)
-
-    def display_text(self):
-        text = self.text_input.text()
+    async def display_text(self) -> None:
+        text = self.query_one("#text_input", Input).value
+        display_window = self.query_one("#display_window", DisplayWindow)
         processed_text = process_tweet(text)
 
-        self.display_window.append(f"<b>Original</b>: {text}")
-        self.display_window.append(f"<b>Processed</b>: {processed_text}")
-        self.display_window.append("------------------------------------")
+        display_window.update("")
+        display_window.append_text(f"Original: {text}\nProcessed: {processed_text}\n")
 
-        if self.naive_bayes_button.isChecked():
+        if self.query_one("#naive_bayes", RadioButton).value:
             if not Path("pretrained/nb_model.json").exists():
-                self.display_window.append("Training Naive Bayes model ...")
+                display_window.append_text("Training Naive Bayes model ...\n")
                 train_naive_bayes()
-                self.display_window.append("Training completed")
-                self.display_window.append("------------------------------------")
+                display_window.append_text("Training completed\n")
 
             score = calculate_naive_bayes(text)
             sentiment = "😀" if score > 0 else ("😡" if score < 0 else "😶")
 
-            self.display_window.append(f"<b>Score</b>: {score}")
-            self.display_window.append(f"<b>Sentiment</b>: {sentiment}")
-        elif self.logistic_regression_button.isChecked():
-            ...
+            display_window.append_text(f"Score: {score}\nSentiment: {sentiment}\n")
+        elif self.query_one("#logistic_regression", RadioButton).value:
+            # Placeholder for logistic regression implementation
+            pass
 
-        self.display_window.append("====================================")
-        self.text_input.clear()
+        self.query_one("#text_input", Input).value = ""
 
 
 if __name__ == "__main__":
-    app = QApplication([])
-
-    window = MainWindow()
-    window.show()
-
-    app.exec()
+    app = MainApp()
+    app.run()

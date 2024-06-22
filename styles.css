@@ -1,0 +1,15 @@
+#display_window {
+    padding: 1 1 1 1; /* Use integers separated by space */
+    border: solid #787878; /* Use a valid border type */
+    background: #4e4e4e; /* Use 'background' instead of 'background-color' */
+}
+
+#text_input {
+    margin: 1 0 0 0; /* Use integers separated by space */
+}
+
+Button {
+    background: #007acc; /* Use 'background' instead of 'background-color' */
+    color: white;
+    padding: 1 1; /* Use integers separated by space */
+}
