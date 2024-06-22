@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -21,8 +20,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Text Input Example")
-        self.setFixedSize(600, 450)
+        self.setWindowTitle("Simple Sentiment Analysis")
+        self.setFixedSize(600, 500)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -31,6 +30,7 @@ class MainWindow(QMainWindow):
 
         self.text_input_layout = QHBoxLayout()
         self.text_input = QLineEdit()
+        self.text_input.setPlaceholderText("Type your text here ...")
         self.send_button = QPushButton("Send")
         self.send_button.clicked.connect(self.display_text)
 
@@ -60,13 +60,13 @@ class MainWindow(QMainWindow):
         text = self.text_input.text()
         processed_text = process_tweet(text)
 
-        self.display_window.append(f"Original: {text}")
-        self.display_window.append(f"Processed: {processed_text}")
+        self.display_window.append(f"<b>Original</b>: {text}")
+        self.display_window.append(f"<b>Processed</b>: {processed_text}")
         self.display_window.append("------------------------------------")
 
         if self.naive_bayes_button.isChecked():
             if not Path("pretrained/nb_model.json").exists():
-                self.display_window.append("Training Naive Bayes model...")
+                self.display_window.append("Training Naive Bayes model ...")
                 train_naive_bayes()
                 self.display_window.append("Training completed")
                 self.display_window.append("------------------------------------")
@@ -74,8 +74,8 @@ class MainWindow(QMainWindow):
             score = calculate_naive_bayes(text)
             sentiment = "😀" if score > 0 else ("😡" if score < 0 else "😶")
 
-            self.display_window.append(f"Score: {score}")
-            self.display_window.append(f"Sentiment: {sentiment}")
+            self.display_window.append(f"<b>Score</b>: {score}")
+            self.display_window.append(f"<b>Sentiment</b>: {sentiment}")
         elif self.logistic_regression_button.isChecked():
             ...
 
